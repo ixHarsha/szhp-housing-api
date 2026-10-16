@@ -22,7 +22,25 @@
    them would break the service contract.
    ===================================================================== */
 
-USE [MOEI];
+/* ---------------------------------------------------------------------
+   This script does NOT switch database. It runs against whatever database
+   the connection is already on, so choose it deliberately:
+
+     sqlcmd ... -d SZHP_DEMO -i <this file>
+     DBeaver: set the active database before executing
+
+   The check below refuses master/tempdb/model/msdb, because a client left
+   on its default connection is the easy way to create these objects in
+   entirely the wrong place.
+   --------------------------------------------------------------------- */
+
+SELECT DB_NAME() AS creating_objects_in;
+
+IF DB_NAME() IN ('master', 'tempdb', 'model', 'msdb')
+BEGIN
+    RAISERROR ('Refusing to run against a system database (%s). Select the target database first.', 16, 1, 0);
+    SET NOEXEC ON;
+END
 GO
 
 /* ----------------------------------------------------------- applicant */
@@ -234,4 +252,7 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_COMMON_REQUEST_HISTORY_REQUEST')
 CREATE INDEX IX_COMMON_REQUEST_HISTORY_REQUEST ON dbo.COMMON_REQUEST_HISTORY (REQUEST_ID, CREATED_DATE);
+GO
+
+SET NOEXEC OFF;
 GO

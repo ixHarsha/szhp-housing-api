@@ -3,7 +3,25 @@
    Every read and write the API performs goes through one of these.
    ===================================================================== */
 
-USE [MOEI];
+/* ---------------------------------------------------------------------
+   This script does NOT switch database. It runs against whatever database
+   the connection is already on, so choose it deliberately:
+
+     sqlcmd ... -d SZHP_DEMO -i <this file>
+     DBeaver: set the active database before executing
+
+   The check below refuses master/tempdb/model/msdb, because a client left
+   on its default connection is the easy way to create these objects in
+   entirely the wrong place.
+   --------------------------------------------------------------------- */
+
+SELECT DB_NAME() AS creating_objects_in;
+
+IF DB_NAME() IN ('master', 'tempdb', 'model', 'msdb')
+BEGIN
+    RAISERROR ('Refusing to run against a system database (%s). Select the target database first.', 16, 1, 0);
+    SET NOEXEC ON;
+END
 GO
 
 /* ------------------------------------------------------- list (paged) */
@@ -416,4 +434,7 @@ BEGIN
     WHERE   REQUEST_ID = @RequestId
     ORDER BY CREATED_DATE, ID;
 END
+GO
+
+SET NOEXEC OFF;
 GO

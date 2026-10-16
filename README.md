@@ -52,9 +52,14 @@ Existing spellings are preserved deliberately — `TECHNICAL_CONSITION`,
 ### Scripts
 
 ```bash
-sqlcmd -S <host> -d MOEI -U <user> -P <password> -i src/main/resources/db/mssql/01_tables.sql
-sqlcmd -S <host> -d MOEI -U <user> -P <password> -i src/main/resources/db/mssql/02_procedures.sql
+sqlcmd -S <host> -d <database> -U <user> -P <password> -i src/main/resources/db/mssql/01_tables.sql
+sqlcmd -S <host> -d <database> -U <user> -P <password> -i src/main/resources/db/mssql/02_procedures.sql
 ```
+
+Neither script switches database — they run against whatever the connection is
+already on, and refuse to run against `master`, `tempdb`, `model` or `msdb`.
+Pass `-d` deliberately, or set the active database in your client. Each prints
+`creating_objects_in` as its first result set; check it before reading on.
 
 `01_tables.sql` is guarded by existence checks, so on the real database it is a
 no-op; run it only to stand up an equivalent elsewhere.
