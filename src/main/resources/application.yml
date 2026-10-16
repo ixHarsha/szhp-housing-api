@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: szhp-housing-api
+  datasource:
+    # MOEI holds the SZHP tables (schema dbo).
+    url: ${SZHP_DB_URL:jdbc:sqlserver://localhost:1433;databaseName=MOEI;encrypt=true;trustServerCertificate=true}
+    username: ${SZHP_DB_USER:}
+    password: ${SZHP_DB_PASSWORD:}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 20000
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    # The UI DTOs treat every field as optional; keep nulls so the shape is stable.
+    default-property-inclusion: always
+  sql:
+    init:
+      mode: never
+
+server:
+  port: 8080
+
+logging:
+  level:
+    ae.moei.szhp: INFO
