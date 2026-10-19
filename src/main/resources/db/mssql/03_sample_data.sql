@@ -13,9 +13,11 @@
 
 SET NOCOUNT ON;
 
-IF DB_NAME() NOT LIKE '%[_]DEMO'
+/* RAISERROR takes a variable, not a function call, as a %s argument. */
+DECLARE @db SYSNAME = DB_NAME();
+IF @db NOT LIKE '%[_]DEMO'
 BEGIN
-    RAISERROR ('Refusing to seed: the current database (%s) is not a _DEMO database. See the header.', 16, 1, 0);
+    RAISERROR ('Refusing to seed: the current database (%s) is not a _DEMO database. See the header.', 16, 1, @db);
     SET NOEXEC ON;
 END
 GO

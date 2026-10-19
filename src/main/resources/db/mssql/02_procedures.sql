@@ -17,9 +17,11 @@
 
 SELECT DB_NAME() AS creating_objects_in;
 
-IF DB_NAME() IN ('master', 'tempdb', 'model', 'msdb')
+/* RAISERROR takes a variable, not a function call, as a %s argument. */
+DECLARE @db SYSNAME = DB_NAME();
+IF @db IN ('master', 'tempdb', 'model', 'msdb')
 BEGIN
-    RAISERROR ('Refusing to run against a system database (%s). Select the target database first.', 16, 1, 0);
+    RAISERROR ('Refusing to run against a system database (%s). Select the target database first.', 16, 1, @db);
     SET NOEXEC ON;
 END
 GO
@@ -189,10 +191,12 @@ BEGIN
                OR ( ( COUNT(CASE WHEN T2.RELATIONSHIP = 'DAUGHTER' AND T2.MARITAL_STATUS = 'SINGLE' THEN 1 END)
                     + COUNT(CASE WHEN T2.RELATIONSHIP = 'SON' AND T2.AGE <= 24 THEN 1 END)
                     + COUNT(CASE WHEN T2.RELATIONSHIP = 'WIFE' THEN 1 END) ) > 0
-                  AND ( @CurrentSalary /
+                  /* NULLIF: SQL Server does not promise to short-circuit the
+                     AND above, so guard the divisor itself. */
+                  AND ( @CurrentSalary / NULLIF(
                         ( COUNT(CASE WHEN T2.RELATIONSHIP = 'DAUGHTER' AND T2.MARITAL_STATUS = 'SINGLE' THEN 1 END)
                         + COUNT(CASE WHEN T2.RELATIONSHIP = 'SON' AND T2.AGE <= 24 THEN 1 END)
-                        + COUNT(CASE WHEN T2.RELATIONSHIP = 'WIFE' THEN 1 END) ) ) < 3000 )
+                        + COUNT(CASE WHEN T2.RELATIONSHIP = 'WIFE' THEN 1 END) ), 0) ) < 3000 )
              THEN 'Eligible' ELSE 'Not Eligible'
            END AS ELIGIBILITY
     FROM   dbo.MOEI_APPLICANTS T1

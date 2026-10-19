@@ -36,9 +36,11 @@
 
 SELECT DB_NAME() AS creating_objects_in;
 
-IF DB_NAME() IN ('master', 'tempdb', 'model', 'msdb')
+/* RAISERROR takes a variable, not a function call, as a %s argument. */
+DECLARE @db SYSNAME = DB_NAME();
+IF @db IN ('master', 'tempdb', 'model', 'msdb')
 BEGIN
-    RAISERROR ('Refusing to run against a system database (%s). Select the target database first.', 16, 1, 0);
+    RAISERROR ('Refusing to run against a system database (%s). Select the target database first.', 16, 1, @db);
     SET NOEXEC ON;
 END
 GO
