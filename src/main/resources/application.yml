@@ -18,6 +18,11 @@ spring:
   sql:
     init:
       mode: never
+  servlet:
+    multipart:
+      # Attachments: 5 MB per file (AttachmentService.MAX_FILE_SIZE), one file per request.
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 server:
   port: 8080

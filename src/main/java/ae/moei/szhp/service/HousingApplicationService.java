@@ -19,10 +19,12 @@ public class HousingApplicationService {
 
     private final HousingApplicationDao dao;
     private final IdGenerator idGenerator;
+    private final AttachmentService attachments;
 
-    public HousingApplicationService(HousingApplicationDao dao, IdGenerator idGenerator) {
+    public HousingApplicationService(HousingApplicationDao dao, IdGenerator idGenerator, AttachmentService attachments) {
         this.dao = dao;
         this.idGenerator = idGenerator;
+        this.attachments = attachments;
     }
 
     /* -------------------------------------------------------------- reads */
@@ -51,12 +53,15 @@ public class HousingApplicationService {
     }
 
     /**
-     * Attaches the applicant's family and the eligibility verdict.
+     * Attaches the uploaded documents, the applicant's family and the
+     * eligibility verdict.
      *
      * <p>Eligibility comes from the programme's own rule, run in the database
      * rather than reimplemented here, so there is one definition of it.
      */
     private void enrich(HousingApplicationDetails details) {
+        details.attachments = attachments.listLoaded(details.applicationId);
+
         String applicant = details.applicant == null ? null : details.applicant.userId();
         if (isBlank(applicant)) {
             return;
@@ -103,6 +108,11 @@ public class HousingApplicationService {
 
         dao.insert(applicationId, applicant, status,
                 isBlank(form.source) ? "Website" : form.source, applicant, formValues(form));
+        if (submit) {
+            // A brand-new request has no documents yet, so this rejects and the
+            // transaction rolls the insert back. Save a draft, upload, then submit.
+            attachments.assertRequiredDocuments(applicationId);
+        }
 
         dao.changeStatus(applicationId, status,
                 submit ? "Application Submitted" : "Draft Created",
@@ -130,6 +140,7 @@ public class HousingApplicationService {
         dao.update(applicationId, applicant, formValues(form));
 
         if (submit) {
+            attachments.assertRequiredDocuments(applicationId);
             boolean resubmission = ApplicationStatus.RETURNED.equalsIgnoreCase(existing.status);
             dao.changeStatus(applicationId, ApplicationStatus.SUBMITTED,
                     resubmission ? "Applicant Resubmission" : "Application Submitted",
@@ -149,6 +160,7 @@ public class HousingApplicationService {
                     "A request with status '%s' cannot be submitted.".formatted(existing.status));
         }
         assertSubmittable(existing);
+        attachments.assertRequiredDocuments(applicationId);
 
         boolean resubmission = ApplicationStatus.RETURNED.equalsIgnoreCase(existing.status);
         dao.changeStatus(applicationId, ApplicationStatus.SUBMITTED,

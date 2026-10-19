@@ -111,6 +111,8 @@ public class HousingApplicationDetails {
     public EmployerDetail employerDetails;
     public ProcessComment processComment;
     public List<FamilyDetails> family;
+    /** Response only - files are uploaded through the attachments endpoints. */
+    public List<Attachment> attachments;
 
     /** From usp_SZHP_Applicant_Eligibility: 'Eligible' or 'Not Eligible'. */
     public String eligibility;

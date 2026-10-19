@@ -73,6 +73,16 @@ draft, submitted, under review and approved, so the form has something to show.
 sqlcmd -S <host> -d SZHP_DEMO -U <user> -P <password> -i src/main/resources/db/mssql/03_sample_data.sql
 ```
 
+`04_attachments.sql` creates `MOEI_SZHP_ATTACHMENTS` and its four procedures.
+**This table is new, not taken from the live schema** — its columns follow
+`IAttachment`, and it stores each file base64-encoded in `FILE_CONTENT`. That is
+demo storage: before going live, map it onto the real attachment table or
+document store. It touches no existing table, and is existence-guarded.
+
+```bash
+sqlcmd -S <host> -d SZHP_DEMO -U <user> -P <password> -i src/main/resources/db/mssql/04_attachments.sql
+```
+
 > **The column-to-table split in `01_tables.sql` is inferred.** The names come
 > from the webMethods adapter `getHousingApplicationById`, whose output is a
 > JOIN across the application, applicant and employer tables, so *which* table
@@ -85,7 +95,8 @@ sqlcmd -S <host> -d SZHP_DEMO -U <user> -P <password> -i src/main/resources/db/m
 
 `usp_SZHP_HousingApplication_List` / `_Get` / `_Insert` / `_Update` /
 `_ChangeStatus`, `usp_SZHP_ApplicantFamily_List`,
-`usp_SZHP_Applicant_Eligibility`, `usp_SZHP_RequestHistory_List`.
+`usp_SZHP_Applicant_Eligibility`, `usp_SZHP_RequestHistory_List`, and
+`usp_SZHP_Attachment_List` / `_Get` / `_Insert` / `_Delete` (soft delete).
 
 `_List` expands a status filter across the spellings that really occur, so
 filtering on "under review" also matches `UNDER_REVIEW` and
@@ -120,10 +131,28 @@ if the rule already expects the annual value, drop the division in
 | `POST` | `/api/housing-applications?submit=` | Create as draft or submit |
 | `PUT` | `/api/housing-applications/{id}?submit=` | Update a draft or returned request |
 | `POST` | `/api/housing-applications/{id}/submit` | Submit an existing draft |
+| `GET` | `/api/housing-applications/{id}/attachments` | Document list (`IAttachment[]`, no content) |
+| `POST` | `/api/housing-applications/{id}/attachments` | Multipart: `attachmentTypeId`, `file` |
+| `GET` | `/api/housing-applications/{id}/attachments/{attachmentId}` | Download the file |
+| `DELETE` | `/api/housing-applications/{id}/attachments/{attachmentId}` | Remove a document |
 
-Responses serialize `IHousingApplicationDetails` unchanged. Errors are
+Responses serialize `IHousingApplicationDetails` unchanged; the detail response
+also carries `attachments`, as `IHousingApplicationDetails` declares. Errors are
 `{status, error, message, timestamp}` — 404 missing, 409 rule or state
-violation, 400 bad input.
+violation, 400 bad input, 413 file too large.
+
+## Attachments
+
+Document types: `EMIRATES_ID`, `FAMILY_BOOK`, `SALARY_CERTIFICATE`,
+`LEASE_CONTRACT`, `LAND_OWNERSHIP`, `OTHER` (`AttachmentType`). **A request
+cannot be submitted until it has an Emirates ID and a Family Book** — that
+applies to every submit path, so `POST ?submit=true` on a brand-new request is
+rejected: save a draft, upload, then submit.
+
+PDF, JPG and PNG only, up to 5 MB, at most 20 per request. The leading bytes
+must match the extension, and the stored MIME type comes from the extension,
+never from the client. Documents can be added or removed only while the
+request is `DRAFT` or `RETURNED`.
 
 ## Status
 
@@ -142,10 +171,10 @@ replaced before the service is exposed.
 mvn test
 ```
 
-Covers the status rules, id generation, and a full context load that validates
-all eight stored-procedure parameter declarations.
+Covers the status rules, id generation, the attachment rules, and a full context
+load that validates all twelve stored-procedure parameter declarations.
 
-**Nothing here has been run against SQL Server.** It was built in an
-environment with no database reachable, so the SQL is unexecuted: the tables,
-procedures and every query are compile-checked and wired, not proven. Run
-`02_procedures.sql` and exercise the endpoints before trusting it.
+The tests do not touch a database. All four scripts have been run against a
+SQL Server 2022 `SZHP_DEMO` database and every endpoint exercised there; they
+have **not** been run against the real MOEI schema, so the `-- INFERRED`
+columns are still unconfirmed.

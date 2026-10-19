@@ -1,11 +1,13 @@
 package ae.moei.szhp.dao;
 
 import ae.moei.szhp.dto.ApplicantDetails;
+import ae.moei.szhp.dto.Attachment;
 import ae.moei.szhp.dto.EmployerDetail;
 import ae.moei.szhp.dto.FamilyDetails;
 import ae.moei.szhp.dto.HousingApplicationDetails;
 import ae.moei.szhp.dto.HousingApplicationSummary;
 import ae.moei.szhp.dto.RequestHistory;
+import ae.moei.szhp.service.AttachmentType;
 import org.springframework.jdbc.core.RowMapper;
 
 /**
@@ -76,6 +78,32 @@ public final class RowMappers {
             row.str("CREATED_DATE"),
             row.str("COMPLETION_DATE"));
     };
+
+    /** usp_SZHP_Attachment_List / _Get. FILE_CONTENT is read separately, by STORED_ATTACHMENT. */
+    public static final RowMapper<Attachment> ATTACHMENT = (rs, rowNum) -> {
+        Row row = Row.of(rs);
+        String requestId = row.str("REQUEST_ID");
+        String id = row.str("ID");
+        String typeId = row.str("ATTACHMENT_TYPE_ID");
+        return new Attachment(
+            row.str("FILE_NAME"),
+            "/housing-applications/" + requestId + "/attachments/" + id,
+            typeId,
+            id,
+            row.str("SOURCE"),
+            AttachmentType.labelOf(typeId),
+            row.str("LAST_UPDATED_DATE"),
+            row.str("FILE_SIZE"),
+            requestId,
+            id,
+            row.str("APPLICANT_ID"),
+            row.str("CATEGORY"),
+            row.str("FILE_TYPE"),
+            row.str("STATUS"));
+    };
+
+    public static final RowMapper<StoredAttachment> STORED_ATTACHMENT = (rs, rowNum) ->
+            new StoredAttachment(ATTACHMENT.mapRow(rs, rowNum), Row.of(rs).str("FILE_CONTENT"));
 
     /** usp_SZHP_HousingApplication_Get returns the joined application row. */
     public static final RowMapper<HousingApplicationDetails> DETAILS = (rs, rowNum) -> {

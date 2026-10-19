@@ -22,4 +22,9 @@ public class IdGenerator {
     public String historyId() {
         return "HIST_" + Long.toHexString(Math.abs(RANDOM.nextLong()));
     }
+
+    /** e.g. ATT_1a2b3c4d5e6f. */
+    public String attachmentId() {
+        return "ATT_" + Long.toHexString(Math.abs(RANDOM.nextLong()));
+    }
 }

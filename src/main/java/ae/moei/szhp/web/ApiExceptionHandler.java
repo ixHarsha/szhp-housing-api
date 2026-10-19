@@ -4,8 +4,11 @@ import ae.moei.szhp.service.NotFoundException;
 import ae.moei.szhp.service.RuleViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -25,5 +28,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> badRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ApiError.of(400, "Bad Request", ex.getMessage()));
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<ApiError> missingPart(Exception ex) {
+        return ResponseEntity.badRequest().body(ApiError.of(400, "Bad Request", ex.getMessage()));
+    }
+
+    /** spring.servlet.multipart limits are hit before the service sees the file. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> tooLarge(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiError.of(413, "Payload Too Large", "Files must be 5 MB or smaller."));
     }
 }

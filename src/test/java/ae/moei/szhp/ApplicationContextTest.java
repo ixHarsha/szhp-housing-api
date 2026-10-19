@@ -5,7 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * Wires the whole application: the DAO declares eight SimpleJdbcCalls, so a
+ * Wires the whole application: the DAOs declare twelve SimpleJdbcCalls, so a
  * mistake in the procedure parameter declarations shows up here.
  *
  * <p>No SQL Server is contacted. The calls are built with
